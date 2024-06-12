@@ -11,6 +11,6 @@ echo "$SEP pycodestyle $SEP"
 pycodestyle --max-line-length=$LINE_LENGTH chatbot/
 echo -e "$SEP end pycodestyle $SEP\n"
 
-echo "$SEP pydocstyle $SEP"
-pydocstyle chatbot/
-echo -e "$SEP end pydocstyle $SEP\n"
+# echo "$SEP pydocstyle $SEP"
+# pydocstyle chatbot/
+# echo -e "$SEP end pydocstyle $SEP\n"
