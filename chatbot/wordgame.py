@@ -73,10 +73,6 @@ class Wordgame(commands.Cog):
         return random.choice(self.wordlist).replace('_', ' ').lower()
 
     @commands.command()
-    async def wg_ping(self, ctx: commands.Context):
-        await ctx.send(f"pong: {ctx.message}")
-
-    @commands.command()
     async def wg_get_word(self, ctx: commands.Context):
         """Get a random word and send it to chat."""
         await ctx.send(self.get_word())
