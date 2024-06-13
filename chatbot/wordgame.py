@@ -146,6 +146,7 @@ class Wordgame(commands.Cog):
     async def guess(self, ctx: commands.Context):
         if not self.game_started:
             await ctx.send(f"Yo {ctx.author.name}, there's no game going at the moment.")
+            return
 
         guess = ctx.message.content[ctx.message.content.find(' '):].strip().lower()
         logging.info('received guess: %s', guess)
