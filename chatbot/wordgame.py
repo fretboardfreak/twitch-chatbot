@@ -17,12 +17,21 @@
 import collections
 import logging
 import random
+import re
 import string
 import threading
 
 import yaml
 
 from twitchio.ext import commands
+
+
+class MissingLockError(RuntimeError):
+    """Used to indicate a section of code that requires a lock before running."""
+
+
+class WordgameError(Exception):
+    """Used to indicite a miscellaneous error within the wordgame."""
 
 
 class Wordgame(commands.Cog):
@@ -40,6 +49,7 @@ class Wordgame(commands.Cog):
         self.game_lock = threading.Lock()
         self.selected_word = None
         self.censured_word = None
+        self.normalized_word = None  # selected_word but processed for easy guess checking
         # censured word lock to control access to updating the
         self.censured_word_lock = threading.Lock()
         self.guesses = collections.deque()
@@ -70,7 +80,15 @@ class Wordgame(commands.Cog):
 
     def get_word(self):
         """Get a random word with no underscores and in lower case."""
-        return random.choice(self.wordlist).replace('_', ' ').lower()
+        choice = random.choice(self.wordlist).replace('_', ' ').lower()
+
+        if not choice.isalnum():
+            # spaces are allowed, but are not considered alphanumeric so loop
+            # through punctuation anyways and just ignore them.
+            for char in string.punctuation:
+                choice = choice if char not in choice else choice.replace(char, '')
+
+        return choice
 
     @commands.command()
     async def wg_get_word(self, ctx: commands.Context):
@@ -79,18 +97,49 @@ class Wordgame(commands.Cog):
 
     def build_censured_word(self):
         """Build a censured version of the selected word based on the guessed letters."""
+        if not self.censured_word_lock.locked():
+            raise MissingLockError('The build_censured_word method requires the censured_word_lock')
+
         self.censured_word = ''
         for char in self.selected_word:
-            if char == ' ':
+            if char == ' ':  # preserve spaces in selected word but skip them in the censured one
                 continue
 
-            if char in self.guessed_letters or char in string.punctuation:
+            if char in string.punctuation:
                 self.censured_word += char + ' '
 
             else:
                 self.censured_word += '_ '
 
         logging.info(self.censured_word)
+
+    def update_censured_word(self, guess):
+        """Update the censured word without rebuilding the whole thing from all guesses."""
+        if not self.censured_word_lock.locked():
+            raise MissingLockError('The update_censured_word method requires the censured_word_lock')
+
+        normalized_guess = guess.replace(' ', '')
+
+        logging.info('looking for %s in %s to update %s', guess, self.normalized_word, self.censured_word)
+
+        for match in re.finditer(normalized_guess, self.normalized_word):
+            for norm_index in range(match.start(), match.end()):
+                cens_index = norm_index * 2
+
+                norm_char = self.normalized_word[norm_index]
+                if norm_index == 0:
+                    self.censured_word = self.normalized_word[norm_index] + self.censured_word[cens_index+1:]
+
+                else:
+                    beginning = self.censured_word[:cens_index]
+                    end = self.censured_word[cens_index+1:]
+                    self.censured_word = beginning + norm_char + end
+
+        logging.info('new censured_word: %s', self.censured_word)
+
+    def build_normalized_word(self):
+        """Change the formatting of the selected word to make guess checking easier."""
+        self.normalized_word = self.selected_word.replace(' ', '')
 
     def show_str(self):
         """Format a string showing what the censured word is."""
@@ -109,6 +158,7 @@ class Wordgame(commands.Cog):
 
             logging.info('starting a new game')
             self.selected_word = self.get_word()
+            self.build_normalized_word()
 
             logging.info('selected word %s', self.selected_word)
 
@@ -118,6 +168,7 @@ class Wordgame(commands.Cog):
             preamble = (f"Alrighty chat! Let's play a Wordgame. {self.description} "
                         "You can guess single letters or words. Use '?help' for a list of available game commands. "
                         "Use '?guess GUESS' or '?g GUESS' to submit a guess. "
+                        "Use '?show' to see the word again and '?help' to see these commands again."
                         f"Here is the word you are guessing: {self.censured_word}")
             await ctx.send(preamble)
 
@@ -145,6 +196,8 @@ class Wordgame(commands.Cog):
         self.game_started = False
         self.selected_word = None
         self.censured_word = None
+        self.normalized_word = None
+
         self.guesses = collections.deque()
         self.guessed_letters.clear()
 
@@ -177,17 +230,23 @@ class Wordgame(commands.Cog):
 
         guess = ctx.message.content[ctx.message.content.find(' '):].strip().lower()
         logging.info('received guess: %s', guess)
+
+        if not guess.isalnum() and any(char in guess for char in string.punctuation):
+            await ctx.send(f"Sorry {ctx.author.name}, this game doesn't use punctuation.")
+            return
+
         if guess in self.guesses:
             await ctx.send(f'{guess} has already been guessed')
             return
 
         self.guesses.append(guess)
 
-        if guess in self.selected_word:
+        if guess in self.selected_word:  # check against the word that might include spaces
+            logging.info('"%s" is in the word', guess)
             with self.censured_word_lock:
                 self.guessed_letters.update(guess)
 
-                self.build_censured_word()
+                self.update_censured_word(guess)
 
             if '_' not in self.censured_word:  # winning condition
                 with self.game_lock:
