@@ -92,6 +92,10 @@ class Wordgame(commands.Cog):
 
         logging.info(self.censured_word)
 
+    def show_str(self):
+        """Format a string showing what the censured word is."""
+        return f'The word you are guessing is: {self.censured_word}'
+
     @commands.command()
     async def start(self, ctx: commands.Context):
         """Start the word game."""
@@ -100,7 +104,7 @@ class Wordgame(commands.Cog):
 
         with self.game_lock:
             if self.game_started:
-                await ctx.send(f'A game is already started!  The word you are guessing is {self.censured_word}')
+                await ctx.send(f'A game is already started! {self.show_str()}')
                 return
 
             logging.info('starting a new game')
@@ -118,10 +122,6 @@ class Wordgame(commands.Cog):
             await ctx.send(preamble)
 
             self.game_started = True
-
-    def show_str(self):
-        """Format a string showing what the censured word is."""
-        return f'The word you are guessing is: {self.censured_word}'
 
     @commands.command()
     async def show(self, ctx: commands.Context):
