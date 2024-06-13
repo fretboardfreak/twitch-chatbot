@@ -46,6 +46,7 @@ class Bot(commands.Bot):
         await self.handle_commands(message)
 
     async def require_mod(self, ctx: commands.Context):
+        """Helper method for commands that require a moderator to run them."""
         if not ctx.author.is_mod or ctx.author.name not in self.moderators:
             await ctx.send(f'Nice try {ctx.author.name}... suckah!')
             return False

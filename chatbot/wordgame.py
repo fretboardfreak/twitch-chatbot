@@ -26,6 +26,7 @@ from twitchio.ext import commands
 
 
 class Wordgame(commands.Cog):
+    """TwitchIO Cog that represents a hangman-ish style word guessing game for twitch chats."""
 
     def __init__(self, bot, description, wordlist_yaml):
         self.bot = bot
@@ -45,12 +46,14 @@ class Wordgame(commands.Cog):
         self.guessed_letters = collections.Counter()
 
     def load_words(self):
+        """Load a list of words from the given yaml file containing word lists."""
         data = yaml.load(self.wordlist_yaml_file, yaml.Loader)
         self.wordlist_yaml_file.close()
 
         return self.load_words_from_data(data)
 
     def load_words_from_data(self, data: (dict, list)):
+        """Recursively parse out strings from the data object."""
         wordlist = []
         for key in data:
             value = key if isinstance(data, list) else data[key]
@@ -66,6 +69,7 @@ class Wordgame(commands.Cog):
         return wordlist
 
     def get_word(self):
+        """Get a random word with no underscores and in lower case."""
         return random.choice(self.wordlist).replace('_', ' ').lower()
 
     @commands.command()
@@ -74,9 +78,11 @@ class Wordgame(commands.Cog):
 
     @commands.command()
     async def wg_get_word(self, ctx: commands.Context):
+        """Get a random word and send it to chat."""
         await ctx.send(self.get_word())
 
     def build_censured_word(self):
+        """Build a censured version of the selected word based on the guessed letters."""
         self.censured_word = ''
         for char in self.selected_word:
             if char == ' ':
@@ -92,6 +98,7 @@ class Wordgame(commands.Cog):
 
     @commands.command()
     async def start(self, ctx: commands.Context):
+        """Start the word game."""
         if not await self.bot.require_mod(ctx):
             return
 
@@ -117,13 +124,20 @@ class Wordgame(commands.Cog):
             self.game_started = True
 
     def show_str(self):
+        """Format a string showing what the censured word is."""
         return f'The word you are guessing is: {self.censured_word}'
 
     @commands.command()
     async def show(self, ctx: commands.Context):
+        """Send a message to chat showing what the censured word is."""
         await ctx.send(self.show_str())
 
     async def end_game(self, ctx: commands.Context, print_stats=True):
+        """
+        End the game and reset the state variables.
+
+        Optionally send a chat message with some game statistics.
+        """
         if print_stats:
             most_common_letter = self.guessed_letters.most_common(n=1)[0]
             await ctx.send(f'It took {len(self.guesses)} guesses to get the word. '
@@ -140,6 +154,11 @@ class Wordgame(commands.Cog):
 
     @commands.command()
     async def end(self, ctx: commands.Context):
+        """
+        End the game and reset the state.
+
+        Requires mod powers.
+        """
         if not await self.bot.require_mod(ctx):
             return
 
@@ -150,6 +169,7 @@ class Wordgame(commands.Cog):
 
     @commands.command(aliases=['g'])
     async def guess(self, ctx: commands.Context):
+        """Make a guess in the word game."""
         if not self.game_started:
             await ctx.send(f"Yo {ctx.author.name}, there's no game going at the moment.")
             return
