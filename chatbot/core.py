@@ -48,7 +48,7 @@ class Bot(commands.Bot):
             return
 
         if not message.content.startswith(self.command_prefix):
-            logging.info('%s %s %s', message.channel, message.author, message.content)
+            logging.info('%s: %s: %s', message.channel.name, message.author.name, message.content)
 
         await self.handle_commands(message)
 
