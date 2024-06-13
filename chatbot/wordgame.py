@@ -158,10 +158,15 @@ class Wordgame(commands.Cog):
         if not await self.bot.require_mod(ctx):
             return
 
+        exit_message = "Th-th-th-that's it folks."
+        if not self.game_started:
+            await ctx.send(exit_message)
+            return
+
+        await ctx.send(f"{exit_message} The secret word was: {self.selected_word}")
+
         with self.game_lock:
             await self.end_game(ctx, print_stats=False)
-
-        await ctx.send("Th-th-th-that's it folks.")
 
     @commands.command(aliases=['g'])
     async def guess(self, ctx: commands.Context):
