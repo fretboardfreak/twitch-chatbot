@@ -209,4 +209,9 @@ class Wordgame(commands.Cog):
 
     @commands.command()
     async def help(self, ctx: commands.Context):
-        await ctx.send('help not implemented yet')
+        """Send a chat message with some helpful details about how to play the wordgame."""
+        await ctx.send("This is Wordgame Chatbot! Use '?guess GUESS' or '?g GUESS' to make a guess. "
+                       "Use '?show' to show the secret word with the latest guesses revealed. "
+                       "You can guess single letters or you can guess full words. When the secret word has been "
+                       "fully revealed the game will be over. The person to guess the last few blanks is "
+                       "declared the winner.")
