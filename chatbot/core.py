@@ -22,11 +22,11 @@ from twitchio.ext import commands
 class Bot(commands.Bot):
     """The core twitch chatbot object."""
 
-    default_command_prefix = '?'
+    command_prefix = '?'
 
     def __init__(self, token, channels):
         """Initialize the bot object."""
-        super().__init__(token=token, prefix=self.default_command_prefix, initial_channels=channels)
+        super().__init__(token=token, prefix=self.command_prefix, initial_channels=channels)
 
     async def event_ready(self):
         """Notify console when bot is logged in and ready to chat and use commands."""
@@ -38,7 +38,8 @@ class Bot(commands.Bot):
         if message.echo:  # Messages with echo set to True are messages sent by the bot.
             return
 
-        logging.info(message.content)
+        if not message.content.startswith(self.command_prefix):
+            logging.info('%s %s %s', message.channel, message.author, message.content)
 
         await self.handle_commands(message)
 
