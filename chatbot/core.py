@@ -19,6 +19,10 @@ import logging
 from twitchio.ext import commands
 
 
+class BotError(Exception):
+    """Represents an error raised by the chatbot."""
+
+
 class Bot(commands.Bot):
     """The core twitch chatbot object."""
 
@@ -26,6 +30,9 @@ class Bot(commands.Bot):
 
     def __init__(self, token, channels, moderators):
         """Initialize the bot object."""
+        if not channels:
+            raise BotError('At least one twitch channel to join must be specified.')
+
         super().__init__(token=token, prefix=self.command_prefix, initial_channels=channels)
 
         self.moderators = moderators
