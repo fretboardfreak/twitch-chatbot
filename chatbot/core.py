@@ -35,7 +35,7 @@ class Bot(commands.Bot):
 
         super().__init__(token=token, prefix=self.command_prefix, initial_channels=channels)
 
-        self.moderators = moderators
+        self.moderators = moderators if moderators else []
 
     async def event_ready(self):
         """Notify console when bot is logged in and ready to chat and use commands."""
@@ -54,10 +54,15 @@ class Bot(commands.Bot):
 
     async def require_mod(self, ctx: commands.Context):
         """Helper method for commands that require a moderator to run them."""
-        if not ctx.author.is_mod or ctx.author.name not in self.moderators:
-            await ctx.send(f'Nice try {ctx.author.name}... suckah!')
-            return False
-        return True
+
+        logging.info("user %s: mod %s, broadcaster %s, bot_mod %s",
+                     ctx.author.name, ctx.author.is_mod, ctx.author.is_broadcaster, ctx.author.name in self.moderators)
+
+        if ctx.author.is_mod or ctx.author.is_broadcaster or ctx.author.name in self.moderators:
+            return True
+
+        await ctx.send(f'Nice try {ctx.author.name}... suckah!')
+        return False
 
     @commands.command()
     async def hello(self, ctx: commands.Context):
