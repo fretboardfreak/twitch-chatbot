@@ -185,8 +185,7 @@ class Wordgame(commands.Cog):
 
         if guess in self.selected_word:
             with self.censured_word_lock:
-                for char in guess:
-                    self.guessed_letters.update(char)
+                self.guessed_letters.update(guess)
 
                 self.build_censured_word()
 
