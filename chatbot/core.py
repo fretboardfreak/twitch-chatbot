@@ -24,9 +24,11 @@ class Bot(commands.Bot):
 
     command_prefix = '?'
 
-    def __init__(self, token, channels):
+    def __init__(self, token, channels, moderators):
         """Initialize the bot object."""
         super().__init__(token=token, prefix=self.command_prefix, initial_channels=channels)
+
+        self.moderators = moderators
 
     async def event_ready(self):
         """Notify console when bot is logged in and ready to chat and use commands."""
@@ -42,6 +44,12 @@ class Bot(commands.Bot):
             logging.info('%s %s %s', message.channel, message.author, message.content)
 
         await self.handle_commands(message)
+
+    async def require_mod(self, ctx: commands.Context):
+        if not ctx.author.is_mod or ctx.author.name not in self.moderators:
+            await ctx.send(f'Nice try {ctx.author.name}... suckah!')
+            return False
+        return True
 
     @commands.command()
     async def hello(self, ctx: commands.Context):

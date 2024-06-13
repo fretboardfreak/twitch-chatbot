@@ -31,7 +31,7 @@ def main():
 
     args = parse_cli()
     access_token = token.get_access_token()
-    bot = core.Bot(token=access_token, channels=args.channels)
+    bot = core.Bot(token=access_token, channels=args.channels, moderators=args.mods)
 
     if args.wordgame:
         bot.add_cog(Wordgame(bot, description=args.wordgame, wordlist_yaml=args.wordlist))
@@ -49,6 +49,8 @@ def parse_cli():
 
     parser.add_argument('-c', '--channel', action='append', dest='channels',
                         help='A channel for this bot to join')
+    parser.add_argument('-m', '--moderator', action='append', dest='mods',
+                        help='A twitch user that is a mod for this bot')
 
     # wordgame options
     parser.add_argument('-w', '--wordgame', help="A short description of the wordgame to activate.", default=None)

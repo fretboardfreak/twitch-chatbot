@@ -92,6 +92,9 @@ class Wordgame(commands.Cog):
 
     @commands.command()
     async def start(self, ctx: commands.Context):
+        if not await self.bot.require_mod(ctx):
+            return
+
         with self.game_lock:
             if self.game_started:
                 await ctx.send(f'A game is already started!  The word you are guessing is {self.censured_word}')
@@ -137,6 +140,9 @@ class Wordgame(commands.Cog):
 
     @commands.command()
     async def end(self, ctx: commands.Context):
+        if not await self.bot.require_mod(ctx):
+            return
+
         with self.game_lock:
             await self.end_game(ctx, print_stats=False)
 
