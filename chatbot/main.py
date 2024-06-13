@@ -19,20 +19,23 @@ import logging
 
 from . import core
 from . import token
+from .wordgame import Wordgame
 
 from .version import __version__
 
 
 def main():
     """Execute the logic for CLI scripts to run the twitch chatbot."""
-    logging.basicConfig(format='[%(levelname)s] %(asctime)s - %(funcName)s: %(message)s',
+    logging.basicConfig(format='[%(levelname)s] %(asctime)s - %(module)s %(funcName)s: %(message)s',
                         level=logging.WARNING)
 
     args = parse_cli()
-
     access_token = token.get_access_token()
-
     bot = core.Bot(token=access_token, channels=args.channels)
+
+    if args.wordgame:
+        bot.add_cog(Wordgame(bot, description=args.wordgame, wordlist_yaml=args.wordlist))
+
     bot.run()
 
 
@@ -46,6 +49,11 @@ def parse_cli():
 
     parser.add_argument('-c', '--channel', action='append', dest='channels',
                         help='A channel for this bot to join')
+
+    # wordgame options
+    parser.add_argument('-w', '--wordgame', help="A short description of the wordgame to activate.", default=None)
+    parser.add_argument('-l', '--wordlist', type=argparse.FileType('r'),
+                        help='A yaml file containing a named collection of word lists.')
 
     return parser.parse_args()
 
