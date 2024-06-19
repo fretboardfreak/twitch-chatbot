@@ -2,6 +2,6 @@
 
 /build
 /dist
-/*egg-info
+*egg-info
 
 twitch_access_token
