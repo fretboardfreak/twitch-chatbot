@@ -21,6 +21,8 @@ import re
 import string
 import threading
 
+from importlib import resources
+
 import yaml
 
 from twitchio.ext import commands
@@ -37,10 +39,13 @@ class WordgameError(Exception):
 class Wordgame(commands.Cog):
     """TwitchIO Cog that represents a hangman-ish style word guessing game for twitch chats."""
 
-    def __init__(self, bot, description, wordlist_yaml):
+    default_description = "I'm thinking of the name of an item that you can collect in Minecraft."
+    default_wordlist_yaml = 'minecraft_1.20_item_list.yml'
+
+    def __init__(self, bot, description=None, wordlist_yaml_file=None):
         self.bot = bot
         self.description = description
-        self.wordlist_yaml_file = wordlist_yaml
+        self.wordlist_yaml_file = wordlist_yaml_file
         self.wordlist = self.load_words()
         logging.info("Wordgame has %s words available", len(self.wordlist))
 
@@ -50,15 +55,22 @@ class Wordgame(commands.Cog):
         self.selected_word = None
         self.censured_word = None
         self.normalized_word = None  # selected_word but processed for easy guess checking
-        # censured word lock to control access to updating the
+        # censured word lock to control access to updating the censured word
         self.censured_word_lock = threading.Lock()
         self.guesses = collections.deque()
         self.guessed_letters = collections.Counter()
 
     def load_words(self):
         """Load a list of words from the given yaml file containing word lists."""
-        data = yaml.load(self.wordlist_yaml_file, yaml.Loader)
-        self.wordlist_yaml_file.close()
+        try:
+            if self.wordlist_yaml_file is None:
+                self.description = self.default_description
+                self.wordlist_yaml_file = (resources.files(__package__) / self.default_wordlist_yaml).open('r')
+
+            data = yaml.load(self.wordlist_yaml_file, yaml.Loader)
+        finally:
+            if not self.wordlist_yaml_file.closed:
+                self.wordlist_yaml_file.close()
 
         return self.load_words_from_data(data)
 

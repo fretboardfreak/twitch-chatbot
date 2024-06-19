@@ -34,7 +34,7 @@ def main():
     bot = core.Bot(token=access_token, channels=args.channels, moderators=args.mods)
 
     if args.wordgame:
-        bot.add_cog(Wordgame(bot, description=args.wordgame, wordlist_yaml=args.wordlist))
+        bot.add_cog(Wordgame(bot, description=args.summary, wordlist_yaml_file=args.wordlist))
 
     bot.run()
 
@@ -53,8 +53,11 @@ def parse_cli():
                         help='A twitch user that is a mod for this bot')
 
     # wordgame options
-    parser.add_argument('-w', '--wordgame', help="A short description of the wordgame to activate.", default=None)
-    parser.add_argument('-l', '--wordlist', type=argparse.FileType('r'),
+    parser.add_argument('-w', '--wordgame', help="Activate the wordgame chatbot commands.",
+                        action='store_true', default=False)
+    parser.add_argument('-s', '--summary', default=None,
+                        help="A short description of the wordgame to activate. i.e. describe the wordlist.")
+    parser.add_argument('-l', '--wordlist', type=argparse.FileType('r'), default=None,
                         help='A yaml file containing a named collection of word lists.')
 
     return parser.parse_args()
