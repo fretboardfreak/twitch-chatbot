@@ -2,6 +2,8 @@
 
 /build
 /dist
+/venv
+
 *egg-info
 
 twitch_access_token
