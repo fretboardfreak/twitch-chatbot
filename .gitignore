@@ -1,2 +1,7 @@
 !.gitignore
+
+/build
+/dist
+/*egg-info
+
 twitch_access_token
