@@ -19,22 +19,21 @@ from pathlib import Path
 
 
 ENV_VAR = 'TWITCH_ACCESS_TOKEN'
-TOKEN_FILE = 'twitch_access_token'
 
 
 class TokenError(Exception):
     """Exception used to indicate an error with the Token."""
 
 
-def get_access_token():
+def get_access_token(input_file):
     """Retrieve a twitch user's Oauth2 token."""
-    if ENV_VAR not in os.environ:
-        filepath = Path(TOKEN_FILE)
-        if not filepath.exists():
-            raise TokenError('Missing Token: The twitch access token must be provided to the chatbot. '
-                             'The token must be provided either in an environment variable '
-                             '"TWITCH_ACCESS_TOKEN" or in a file in the CWD named "twitch_access_token"')
+    # if input file is valid use that
+    if input_file is not None and not input_file.closed:
+        return input_file.read().strip()
 
-        return filepath.read_text(encoding='utf-8').strip()
+    if ENV_VAR in os.environ:
+        return os.environ[ENV_VAR]
 
-    return os.environ[ENV_VAR]
+    raise TokenError('Missing Token: The twitch access token must be provided to the chatbot. '
+                     'The token must be provided either in an environment variable '
+                     '"TWITCH_ACCESS_TOKEN" or in a file in the CWD named "twitch_access_token"')

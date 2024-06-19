@@ -30,7 +30,7 @@ def main():
                         level=logging.WARNING)
 
     args = parse_cli()
-    access_token = token.get_access_token()
+    access_token = token.get_access_token(args.token)
     bot = core.Bot(token=access_token, channels=args.channels, moderators=args.mods)
 
     if args.wordgame:
@@ -47,6 +47,8 @@ def parse_cli():
     DebugAction.add_parser_argument(parser)
     VerboseAction.add_parser_argument(parser)
 
+    parser.add_argument('-t', '--token', type=argparse.FileType('r'), default=None,
+                        help='The Twitch API OAuth2 token for the user account the bot will use.')
     parser.add_argument('-c', '--channel', action='append', dest='channels',
                         help='A channel for this bot to join')
     parser.add_argument('-m', '--moderator', action='append', dest='mods',
@@ -55,7 +57,7 @@ def parse_cli():
     # wordgame options
     parser.add_argument('-w', '--wordgame', help="Activate the wordgame chatbot commands.",
                         action='store_true', default=False)
-    parser.add_argument('-s', '--summary', default=None,
+    parser.add_argument('-s', '--summary', dest='summary', default=None,
                         help="A short description of the wordgame to activate. i.e. describe the wordlist.")
     parser.add_argument('-l', '--wordlist', type=argparse.FileType('r'), default=None,
                         help='A yaml file containing a named collection of word lists.')
