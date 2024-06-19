@@ -17,8 +17,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    'ipython',
-    'pycodestyle',
     'pylint',
     'pytest'
 ]
@@ -28,7 +26,7 @@ build = [
 ]
 
 [project.scripts]
-twitch_chatbot = 'chatbot.main:main'
+twitch-chatbot = 'chatbot.main:main'
 
 [tool.setuptools.packages.find]
 where = ['src']
@@ -41,3 +39,20 @@ chatbot = ['minecraft_1.20_item_list.yml']
 
 [tool.setuptools.dynamic]
 version = {attr = "chatbot.__version__"}
+
+# Pylint Configuration
+[tool.pylint.main]
+jobs = 0  # allow as many threads as necessary and can fit on the local cpu
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.logging]
+logging-format-style = 'new'
+
+[tool.pylint."messages control"]
+disable = [
+    "logging-fstring-interpolation",  # allow logging with normal fstrings
+    "logging-format-interpolation",
+    "too-many-instance-attributes"
+]
