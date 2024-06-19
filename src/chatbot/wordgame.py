@@ -47,7 +47,7 @@ class Wordgame(commands.Cog):
         self.description = description
         self.wordlist_yaml_file = wordlist_yaml_file
         self.wordlist = self.load_words()
-        logging.info("Wordgame has %s words available", len(self.wordlist))
+        logging.info(f"Wordgame has {len(self.wordlist)} words available")
 
         self.game_started = False
         # game lock to control access to game state like declaring a winner or starting up
@@ -86,7 +86,7 @@ class Wordgame(commands.Cog):
                 wordlist.append(value)
 
             else:
-                logging.warning('wordgame load words: skipping %s', data[key])
+                logging.warning(f'wordgame load words: skipping {data[key]}')
 
         return wordlist
 
@@ -123,7 +123,7 @@ class Wordgame(commands.Cog):
             else:
                 self.censured_word += '_ '
 
-        logging.info(self.censured_word)
+        logging.info(f'Starting with censured word: {self.censured_word}')
 
     def update_censured_word(self, guess):
         """Update the censured word without rebuilding the whole thing from all guesses."""
@@ -132,7 +132,7 @@ class Wordgame(commands.Cog):
 
         normalized_guess = guess.replace(' ', '')
 
-        logging.info('looking for %s in %s to update %s', guess, self.normalized_word, self.censured_word)
+        logging.info('looking for {guess} in {self.normalized_word} to update {self.censured_word}')
 
         for match in re.finditer(normalized_guess, self.normalized_word):
             for norm_index in range(match.start(), match.end()):
@@ -147,7 +147,7 @@ class Wordgame(commands.Cog):
                     end = self.censured_word[cens_index+1:]
                     self.censured_word = beginning + norm_char + end
 
-        logging.info('new censured_word: %s', self.censured_word)
+        logging.info(f'new censured_word: {self.censured_word}')
 
     def build_normalized_word(self):
         """Change the formatting of the selected word to make guess checking easier."""
@@ -172,7 +172,7 @@ class Wordgame(commands.Cog):
             self.selected_word = self.get_word()
             self.build_normalized_word()
 
-            logging.info('selected word %s', self.selected_word)
+            logging.info(f'selected word {self.selected_word}')
 
             with self.censured_word_lock:
                 self.build_censured_word()
@@ -203,8 +203,8 @@ class Wordgame(commands.Cog):
                            f'The most commonly guessed letter, {most_common_letter[0]}, '
                            f'was guessed {most_common_letter[1]} times.  GG Chat!')
 
-        logging.info('Guesses: %s', list(self.guesses))
-        logging.info('Total guesses: %s', len(self.guesses))
+        logging.info(f'Guesses: {list(self.guesses)}')
+        logging.info(f'Total guesses: {len(self.guesses)}')
         self.game_started = False
         self.selected_word = None
         self.censured_word = None
@@ -241,7 +241,7 @@ class Wordgame(commands.Cog):
             return
 
         guess = ctx.message.content[ctx.message.content.find(' '):].strip().lower()
-        logging.info('received guess: %s', guess)
+        logging.info(f'received guess: {guess}')
 
         if not guess.isalnum() and any(char in guess for char in string.punctuation):
             await ctx.send(f"Sorry {ctx.author.name}, this game doesn't use punctuation.")
@@ -254,7 +254,7 @@ class Wordgame(commands.Cog):
         self.guesses.append(guess)
 
         if guess in self.selected_word:  # check against the word that might include spaces
-            logging.info('"%s" is in the word', guess)
+            logging.info('"{guess}" is in the word')
             with self.censured_word_lock:
                 self.guessed_letters.update(guess)
 

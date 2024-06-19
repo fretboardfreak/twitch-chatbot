@@ -27,7 +27,7 @@ from .version import __version__
 def main():
     """Execute the logic for CLI scripts to run the twitch chatbot."""
     logging.basicConfig(format='[%(levelname)s] %(asctime)s - %(module)s %(funcName)s: %(message)s',
-                        level=logging.WARNING)
+                        style='{', level=logging.WARNING)
 
     args = parse_cli()
     access_token = token.get_access_token(args.token)

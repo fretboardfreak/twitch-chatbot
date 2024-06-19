@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import os
-from pathlib import Path
 
 
 ENV_VAR = 'TWITCH_ACCESS_TOKEN'

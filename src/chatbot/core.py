@@ -48,15 +48,15 @@ class Bot(commands.Bot):
             return
 
         if not message.content.startswith(self.command_prefix):
-            logging.info('%s: %s: %s', message.channel.name, message.author.name, message.content)
+            logging.info(f'{message.channel.name}, {message.author.name}, {message.content}')
 
         await self.handle_commands(message)
 
     async def require_mod(self, ctx: commands.Context):
         """Helper method for commands that require a moderator to run them."""
 
-        logging.info("user %s: mod %s, broadcaster %s, bot_mod %s",
-                     ctx.author.name, ctx.author.is_mod, ctx.author.is_broadcaster, ctx.author.name in self.moderators)
+        logging.info(f"user {ctx.author.name}: mod {ctx.author.is_mod}, "
+                     f"broadcaster {ctx.author.is_broadcaster}, bot_mod {ctx.author.name in self.moderators}")
 
         if ctx.author.is_mod or ctx.author.is_broadcaster or ctx.author.name in self.moderators:
             return True
