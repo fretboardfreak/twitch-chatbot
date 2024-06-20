@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import logging
+import requests
 
 from twitchio.ext import commands
 
@@ -68,3 +69,14 @@ class Bot(commands.Bot):
     async def hello(self, ctx: commands.Context):
         """Test command, "hello" to show the bot is working."""
         await ctx.send(f'Hello {ctx.author.name}!')
+
+    @commands.command()
+    async def joke(self, ctx: commands.Context):
+        """Request a joke from icanhazdadjoke.com and send to chat."""
+        response = requests.get('https://icanhazdadjoke.com/', headers={'Accept': "application/json"}, timeout=30)
+        if not response.ok:
+            await ctx.send('Failed to get a joke.  Contact fret :( ')
+            return
+
+        json_data = response.json()
+        await ctx.send(json_data['joke'])

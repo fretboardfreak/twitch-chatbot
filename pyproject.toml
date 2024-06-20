@@ -12,7 +12,8 @@ requires-python = ">=3.9"
 license = {file = 'LICENSE.md'}
 dependencies = [
     'twitchio',
-    'pyyaml'
+    'pyyaml',
+    'requests'
 ]
 
 [project.optional-dependencies]
