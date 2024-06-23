@@ -20,6 +20,7 @@ import logging
 from . import core
 from . import token
 from .wordgame import Wordgame
+from .pokemon import Pokedex
 
 from .version import __version__
 
@@ -35,6 +36,9 @@ def main():
 
     if args.wordgame:
         bot.add_cog(Wordgame(bot, description=args.summary, wordlist_yaml_file=args.wordlist))
+
+    if args.pokemon:
+        bot.add_cog(Pokedex())
 
     bot.run()
 
@@ -61,6 +65,10 @@ def parse_cli():
                         help="A short description of the wordgame to activate. i.e. describe the wordlist.")
     parser.add_argument('-l', '--wordlist', type=argparse.FileType('r'), default=None,
                         help='A yaml file containing a named collection of word lists.')
+
+    # pokemon options
+    parser.add_argument('-p', '--pokemon', help="Activate the pokedex command.",
+                        action='store_true', default=False)
 
     return parser.parse_args()
 
