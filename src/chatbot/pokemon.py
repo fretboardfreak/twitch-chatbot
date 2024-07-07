@@ -47,10 +47,13 @@ class Pokemon:
     def __str__(self):
         """Format a pokedex description for this pokemon."""
         flavor_text = random.choice(self.flavor_texts).replace('\n', ' ')
+        color = f'{self.color} ' if self.color else ''
+        shape = f'{self.shape} ' if self.shape else ''
+
         return (f'[Pokedex Entry #{self.id}] {self.name.title()}: Height {self.height}cm, '
                 f'Weight {self.weight}kg, Type {" ".join(self.types)}. '
-                f'A {self.color} {self.shape} {self.genus} that lives in '
-                f'{self.habitat}. {flavor_text} {", ".join(self.stats)}')
+                f'A {color}{shape}{self.genus} that lives in {self.habitat}. '
+                f'{flavor_text} {", ".join(self.stats)}')
 
 
 class Pokedex(commands.Cog):
@@ -96,11 +99,16 @@ class Pokedex(commands.Cog):
 
         species_data = species_response.json()
 
-        color = species_data['color']['name']
-        shape = species_data['shape']['name']
-        if species_data['habitat'] is None:
-            habitat = 'unknown areas'
-        else:
+        color = None
+        if species_data['color'] is not None:
+            color = species_data['color']['name']
+
+        shape = None
+        if species_data['shape'] is not None:
+            shape = species_data['shape']['name']
+
+        habitat = 'unknown areas'
+        if species_data['habitat'] is not None:
             habitat = species_data['habitat']['name']
 
         stub = '{} (description from: {})'
