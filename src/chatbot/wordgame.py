@@ -17,7 +17,6 @@
 import collections
 import logging
 import random
-import re
 import string
 import threading
 
@@ -50,6 +49,7 @@ class Wordgame(commands.Cog):
         logging.info(f"Wordgame has {len(self.wordlist)} words available")
 
         self.game_started = False
+        self.hard_mode = False
         # game lock to control access to game state like declaring a winner or starting up
         self.game_lock = threading.Lock()
         self.selected_word = None
@@ -114,40 +114,21 @@ class Wordgame(commands.Cog):
 
         self.censured_word = ''
         for char in self.selected_word:
-            if char == ' ':  # preserve spaces in selected word but skip them in the censured one
+            if self.hard_mode and char == ' ':  # preserve spaces in selected word but skip them in the censured one
                 continue
 
-            if char in string.punctuation:
-                self.censured_word += char + ' '
+            if char in string.punctuation + ' ':
+                if char == ' ':
+                    self.censured_word += '- '
+                else:
+                    self.censured_word += char + ' '
 
+            if char in self.guessed_letters:
+                self.censured_word += char + ' '
             else:
                 self.censured_word += '_ '
 
         logging.info(f'Starting with censured word: {self.censured_word}')
-
-    def update_censured_word(self, guess):
-        """Update the censured word without rebuilding the whole thing from all guesses."""
-        if not self.censured_word_lock.locked():
-            raise MissingLockError('The update_censured_word method requires the censured_word_lock')
-
-        normalized_guess = guess.replace(' ', '')
-
-        logging.info('looking for {guess} in {self.normalized_word} to update {self.censured_word}')
-
-        for match in re.finditer(normalized_guess, self.normalized_word):
-            for norm_index in range(match.start(), match.end()):
-                cens_index = norm_index * 2
-
-                norm_char = self.normalized_word[norm_index]
-                if norm_index == 0:
-                    self.censured_word = self.normalized_word[norm_index] + self.censured_word[cens_index+1:]
-
-                else:
-                    beginning = self.censured_word[:cens_index]
-                    end = self.censured_word[cens_index+1:]
-                    self.censured_word = beginning + norm_char + end
-
-        logging.info(f'new censured_word: {self.censured_word}')
 
     def build_normalized_word(self):
         """Change the formatting of the selected word to make guess checking easier."""
@@ -168,7 +149,11 @@ class Wordgame(commands.Cog):
                 await ctx.send(f'A game is already started! {self.show_str()}')
                 return
 
-            logging.info('starting a new game')
+            if 'hard' in ctx.message.content.lower():
+                self.hard_mode = True
+
+            difficulty = 'hard ' if self.hard_mode else ''
+            logging.info(f'starting a new {difficulty}game')
             self.selected_word = self.get_word()
             self.build_normalized_word()
 
@@ -180,9 +165,14 @@ class Wordgame(commands.Cog):
             preamble = (f"Alrighty chat! Let's play a Wordgame. {self.description} "
                         "You can guess single letters or words. Use '?help' for a list of available game commands. "
                         "Use '?guess GUESS' or '?g GUESS' to submit a guess. "
-                        "Use '?show' to see the word again and '?help' to see these commands again."
-                        f"Here is the word you are guessing: {self.censured_word}")
-            await ctx.send(preamble)
+                        "Use '?show' to see the word again and '?help' to see these commands again.")
+            hard_msg = ''
+            if self.hard_mode:
+                hard_msg = ' This is hard mode so spaces are not shown in the secret word. Good luck!! '
+
+            word = f"Here is the word you are guessing: {self.censured_word}"
+
+            await ctx.send(preamble + hard_msg + word)
 
             self.game_started = True
 
@@ -243,8 +233,12 @@ class Wordgame(commands.Cog):
         guess = ctx.message.content[ctx.message.content.find(' '):].strip().lower()
         logging.info(f'received guess: {guess}')
 
+        # Using a - to indicate spaces in the censured word.
+        # Ignore them if people accidentally use that instead of a space
+        guess = guess.replace('-', '')
+
         if not guess.isalnum() and any(char in guess for char in string.punctuation):
-            await ctx.send(f"Sorry {ctx.author.name}, this game doesn't use punctuation.")
+            await ctx.send(f"Sorry {ctx.author.name}, this game doesn't use punctuation in the guesses.")
             return
 
         if guess in self.guesses:
@@ -253,12 +247,14 @@ class Wordgame(commands.Cog):
 
         self.guesses.append(guess)
 
-        if guess in self.selected_word:  # check against the word that might include spaces
-            logging.info('"{guess}" is in the word')
+        norm_guess = guess.replace(' ', '')
+
+        if norm_guess in self.normalized_word:
+            logging.info(f'"{guess}" is in the word')
             with self.censured_word_lock:
                 self.guessed_letters.update(guess)
 
-                self.update_censured_word(guess)
+                self.build_censured_word()
 
             if '_' not in self.censured_word:  # winning condition
                 with self.game_lock:
@@ -273,7 +269,8 @@ class Wordgame(commands.Cog):
             return
 
         # not a good guess
-        negatives = ["Nerp!", "Nope, good try!", "You wish!", "Sorry"]
+        negatives = ["Nerp!", "Nope, good try!", "You wish!", "Sorry", "Nuh-uh", "If only that was correct!",
+                     "That would have been right if it wasn't sooooo wrong!"]
         await ctx.send(f'{random.choice(negatives)} {ctx.author.name}, "{guess}" is not in the secret word.')
         await self.show(ctx)
 
