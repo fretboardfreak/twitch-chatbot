@@ -123,8 +123,9 @@ class Wordgame(commands.Cog):
                 else:
                     self.censured_word += char + ' '
 
-            if char in self.guessed_letters:
+            elif char in self.guessed_letters:
                 self.censured_word += char + ' '
+
             else:
                 self.censured_word += '_ '
 
@@ -166,7 +167,8 @@ class Wordgame(commands.Cog):
                         "You can guess single letters or words. Use '?help' for a list of available game commands. "
                         "Use '?guess GUESS' or '?g GUESS' to submit a guess. "
                         "Use '?show' to see the word again and '?help' to see these commands again.")
-            hard_msg = ''
+
+            hard_msg = " A - (hyphen) in the secret word indicates a space. "
             if self.hard_mode:
                 hard_msg = ' This is hard mode so spaces are not shown in the secret word. Good luck!! '
 
