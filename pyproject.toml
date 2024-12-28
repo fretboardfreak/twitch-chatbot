@@ -57,3 +57,8 @@ disable = [
     "logging-format-interpolation",
     "too-many-instance-attributes"
 ]
+
+[tool.pytest.ini_options]
+addopts = "--verbosity=2 --exitfirst"
+log_cli = true
+log_cli_level = "DEBUG"
