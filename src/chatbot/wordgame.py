@@ -21,10 +21,15 @@ import string
 import threading
 
 from importlib import resources
+from functools import cache
 
 import yaml
 
 from twitchio.ext import commands
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class MissingLockError(RuntimeError):
@@ -35,7 +40,63 @@ class WordgameError(Exception):
     """Used to indicite a miscellaneous error within the wordgame."""
 
 
-class Wordgame(commands.Cog):
+class WordgameUI(commands.Cog):
+    """TwitchIO Cog providing a chat interface to the wordgame."""
+
+    def start(self, ctx: commands.Context):
+        """Start a new instance of the wordgame for the given twitch channel."""
+
+    def end(self, ctx: commands.Context):
+        """End a running instance of the wordgame for the given twitch channel."""
+
+    def show(self, ctx: commands.Context):
+        """Show the secret word for the wordgame in the given twitch channel."""
+
+    def guess(self, ctx: commands.Context):
+        """Submit a guess from a chatter for the wordgame in the given twitch channel."""
+
+    def help(self, ctx: commands.Context):
+        """Print the wordgame help text in the given twitch channel."""
+
+
+class Wordgame:
+    """A word guessing game."""
+
+    _data = None
+    data_yaml = 'wordgame_wordlist.yml'
+
+    def __init__(self):
+        """Start a new wordgame."""
+        self.secret_word = None
+        self.censored_word = None
+        self.guesses = []
+
+    @classmethod
+    def load_word_data(cls):
+        """Load the word data from the packaged yaml file and cache it for the system."""
+
+        if cls._data:
+            logger.debug('using cached word data')
+            return
+
+        logger.debug('loading word data')
+        with (resources.files(__package__) / cls.data_yaml).open('r') as wordfile:
+            cls._data = yaml.load(wordfile, yaml.Loader)
+
+    @classmethod
+    @cache
+    def word_categories(cls):
+        """Return a list of categories the wordgame can choose a secret word from."""
+        cls.load_word_data()
+        return [str(key) for key in cls._data.keys() if key != 'test']
+
+    def start(self, out_cb, category=None):
+        """Start a new wordgame instance by choosing a secret and calculating a censored word."""
+
+
+
+
+class OriginalWordgame(commands.Cog):
     """TwitchIO Cog that represents a hangman-ish style word guessing game for twitch chats."""
 
     default_description = "I'm thinking of the name of an item that you can collect in Minecraft."
