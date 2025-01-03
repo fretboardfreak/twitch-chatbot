@@ -135,7 +135,7 @@ class WordgameUI(commands.Cog):
         preamble = (f"Alrighty chat! Lets play a wordgame. I'm thinking of {game.description}. "
                     "You can guess single letters or words. Use '?help' for a list of available "
                     "game commands. Use '?guess GUESS' or '?g GUESS' to submit a guess. "
-                    "Use '?show' to see the word again and '?help' to see these commands again. ")
+                    "Use '?show' to see the word again.")
 
         if hardmode:
             preamble += "This is hardmode so spaces will not be shown in the hidden word. "
@@ -344,11 +344,10 @@ class Wordgame:
         censored_wip = ''
         for char in self.secret_word.lower():
             if char == ' ':
-                normalized_word += char
-
                 if self.hard:
                     continue
 
+                normalized_word += char
                 censored_wip += '-'
                 continue
 

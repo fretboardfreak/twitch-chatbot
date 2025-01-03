@@ -101,6 +101,7 @@ def test_clear_caches(cleanup):
                           (False, 'foo bar baz', {'o', 'a'}, '_ o o - _ a _ - _ a _'),
                           (False, 'Pun*ct#ua(tioN', {}, '_ _ _ _ _ _ _ _ _ _ _'),
                           (True, 'foo bar baz', {}, '_ _ _ _ _ _ _ _ _'),
+                          (True, 'foo bar baz', {'o', 'a'}, '_ o o _ a _ _ a _'),
                           ])
 def test_build_censored_word(hard, secret_word, guesses, expected_censored, cleanup):
     """Verify the algorithm for creating the censored word."""
