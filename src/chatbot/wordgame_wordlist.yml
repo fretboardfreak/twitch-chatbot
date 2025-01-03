@@ -1,6 +1,6 @@
 ---
 "test":
-  "description": "Using test words"
+  "description": "a test word"
   "words":
     - "foo"
     - "bar"
@@ -9,9 +9,7 @@
     - "wham"
     - "bam"
 "minecraft":
-  "description": >
-    I'm thinking of the name of an item that you can
-    collect in Minecraft (1.20).
+  "description": "an item that you can collect in Minecraft (1.20)"
   "words":
     - "Stone"
     - "Granite"
