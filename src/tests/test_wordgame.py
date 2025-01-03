@@ -83,6 +83,7 @@ def test_choose_word(category, cleanup):
         assert (isinstance(instance.secret_word_category, str)
                 and instance.secret_word_category)
 
+
 def test_clear_caches(cleanup):
     """Ensure clearing caches actually removes cached state."""
     wordgame.Wordgame.word_categories()
@@ -91,17 +92,19 @@ def test_clear_caches(cleanup):
     wordgame.Wordgame.clear_caches()
     assert wordgame.Wordgame._data is None and wordgame.Wordgame._categories is None
 
-@pytest.mark.parametrize('secret_word,guesses,expected_censored',
-                         [('foo', {}, '_ _ _'),
-                          ('Foo', {'f'}, 'f _ _'),
-                          ('foo', {'o'}, '_ o o'),
-                          ('tetheh', {'th'}, '_ _ t h _ _'),
-                          ('foo bar baz', {'o', 'a'}, '_ o o - _ a _ - _ a _'),
-                          ('Pun*ct#ua(tioN', {}, '_ _ _ _ _ _ _ _ _ _ _'),
+
+@pytest.mark.parametrize('hard,secret_word,guesses,expected_censored',
+                         [(False, 'foo', {}, '_ _ _'),
+                          (False, 'Foo', {'f'}, 'f _ _'),
+                          (False, 'foo', {'o'}, '_ o o'),
+                          (False, 'tetheh', {'th'}, '_ _ t h _ _'),
+                          (False, 'foo bar baz', {'o', 'a'}, '_ o o - _ a _ - _ a _'),
+                          (False, 'Pun*ct#ua(tioN', {}, '_ _ _ _ _ _ _ _ _ _ _'),
+                          (True, 'foo bar baz', {}, '_ _ _ _ _ _ _ _ _'),
                           ])
-def test_build_censored_word(secret_word, guesses, expected_censored, cleanup):
+def test_build_censored_word(hard, secret_word, guesses, expected_censored, cleanup):
     """Verify the algorithm for creating the censored word."""
-    instance = wordgame.Wordgame()
+    instance = wordgame.Wordgame(hard)
 
     instance.secret_word = secret_word
     instance.guesses = guesses

@@ -30,7 +30,7 @@ from twitchio.ext import commands
 
 logger = logging.getLogger(__name__)
 
-LOGGING_LEVEL = logging.DEBUG  # change logging level here to enable/disable debug mode
+LOGGING_LEVEL = logging.INFO  # change logging level here to enable/disable debug mode
 logger.setLevel(LOGGING_LEVEL)
 
 DEBUG = LOGGING_LEVEL <= logging.DEBUG
@@ -54,53 +54,103 @@ class WordgameUI(commands.Cog):
                   "Nuh-uh", "If only that was correct!",
                   "That would have been right if it wasn't sooooo wrong!"]
 
+    @staticmethod
+    def message_content(message):
+        """Given a message from chat remove the command from the beginning."""
+        if ' ' in message:
+            content = ' '.join(message.split(' ')[1:])
+        else:
+            content = ''
+
+        return content
+
     def __init__(self, bot, *args, **kwargs):
         self.bot = bot
         super(*args, **kwargs)
 
     def _show_msg(self, channel):
         """Return a string telling chat the censored word."""
-        censored_word = self.games[channel].censored_word
-        return f'The secret word is {censored_word}'
+        return f'The secret word is {self.games[channel].censored_word}'
 
-    commands.command()
+    def _show_categories(self):
+        """Return a string telling chat the list of available word categories."""
+        return f'Categories available: {", ".join(Wordgame.word_categories())}'
+
+    @commands.command()
     async def start(self, ctx: commands.Context):
         """Start a new instance of the wordgame for the given twitch channel."""
-
-        # TODO: implement hardmode option
-        # TODO: implement category option
 
         if not await self.bot.require_mod(ctx):
             return
 
         if ctx.channel.name in self.games:
             # a game is already running
+            logger.info(f'new wordgame requested in channel {ctx.channel.name} but one is already running.')
             await ctx.send("Can't start a game; one is already running. "
                            + self._show_msg(ctx.channel.name))
             return
 
-        game = Wordgame()
+        options = self.message_content(ctx.message.content).lower().split(' ')
+        if '' in options:
+            # ''.split(' ') => [''] so remove empty string
+            options.remove('')
 
-        game.load_word_data()
+        try:
+            options.remove('hard')
+            hardmode = True
+        except ValueError:
+            hardmode = False
+
+        game = Wordgame(hardmode)
+
+        requested_category = None
+        if len(options) == 1:
+            if options[0] in game.word_categories():
+                requested_category = options[0]
+
+            else:
+                logger.info(f'new wordgame requested in channel {ctx.channel.name} but '
+                            f'category "{options[0]}" is not valid')
+                await ctx.send(f'The requested category "{options[0]}" is not a valid word category. '
+                               + self._show_categories())
+                return
+
+        elif len(options) > 1:  # too many arguments
+            logger.info(f'new wordgame requested in channel {ctx.channel.name} but '
+                        f'received too many args: {options}')
+            await ctx.send('The wordgame start command only takes 2 optional arguments. '
+                           'Include the word "hard" to start hardmode. Include the name of a '
+                           'category to choose words from a specific category. '
+                           + self._show_categories())
+            return
 
         with game.lock:
-            game.choose_word()
+            game.choose_word(requested_category)
 
         self.games[ctx.channel.name] = game
 
-        preamble = ("Alrighty chat! Lets play a wordgame. I'm thinking of {self.description}."
+        logger.info(f'new wordgame started for channel {ctx.channel.name} using '
+                    f'category {game.secret_word_category}: {game.secret_word}')
+
+        preamble = (f"Alrighty chat! Lets play a wordgame. I'm thinking of {game.description}. "
                     "You can guess single letters or words. Use '?help' for a list of available "
                     "game commands. Use '?guess GUESS' or '?g GUESS' to submit a guess. "
                     "Use '?show' to see the word again and '?help' to see these commands again. ")
+
+        if hardmode:
+            preamble += "This is hardmode so spaces will not be shown in the hidden word. "
+
         await ctx.send(preamble + self._show_msg(ctx.channel.name))
 
-    commands.command()
+    @commands.command()
     async def end(self, ctx: commands.Context):
         """End a running instance of the wordgame for the given twitch channel."""
         if not await self.bot.require_mod(ctx):
             return
 
+        logger.info(f'ending wordgame in channel {ctx.channel.name}')
         if ctx.channel.name not in self.games:
+
             await ctx.send('Easy peasy boss. No game running.')
             return
 
@@ -109,28 +159,28 @@ class WordgameUI(commands.Cog):
         await ctx.send("Too bad we can't finish the game. The secret word was "
                        + game.secret_word)
 
-    commands.command()
+    @commands.command()
     async def show(self, ctx: commands.Context):
         """Show the secret word for the wordgame in the given twitch channel."""
-        await ctx.send(f'{self._show_msg(ctx.channel.name)} and is {self.description}')
+        message = f'{self._show_msg(ctx.channel.name)} and is {self.games[ctx.channel.name].description}'
+        logger.info(message)
+        await ctx.send(message)
 
-    commands.command(aliases=['g'])
+    @commands.command(aliases=['g'])
     async def guess(self, ctx: commands.Context):
         """Submit a guess from a chatter for the wordgame in the given twitch channel."""
         if ctx.channel.name not in self.games:
             await ctx.send(f"Yo {ctx.author.name}, there's no game going at the moment.")
             return
 
-        # remove the command stub from the prefix of the message
-        guess = ctx.message.content[ctx.message.content.find(' '):].strip().lower()
-
-        logger.info(f'channel {ctx.channel.name} received guess: {guess}')
+        guess = self.message_content(ctx.message.content).lower()
 
         # Using a - to indicate spaces in the censored word.
         # Ignore them if people accidentally use that instead of a space
         guess = guess.replace('-', '')
 
         if not guess.isalnum() and any(char in guess for char in string.punctuation):
+            logger.info(f'channel {ctx.channel.name} received guess with invalid chars: {guess}')
             await ctx.send(f"Sorry {ctx.author.name}, this game doesn't "
                            "use punctuation in the guesses.")
             return
@@ -146,23 +196,27 @@ class WordgameUI(commands.Cog):
                 self.games.pop(ctx.channel.name)
                 return
 
+        repeated_guess_msg = ''
         if not is_new:
-            await ctx.send(f'Good try {ctx.author.name}. "{guess}" has already been guessed before.')
-            return
+            repeated_guess_msg = f'"{guess}" has already been guessed before.'
 
         show_msg = self._show_msg(ctx.channel.name)
 
         if is_good:
-            await ctx.send(f'Great guess {ctx.author.name}. "{guess}" is in '
+            logger.info(f'channel {ctx.channel.name} received GOOD guess: {guess}')
+
+            await ctx.send(f'Great guess {ctx.author.name}. {repeated_guess_msg} "{guess}" is in '
                            f'the secret word. {show_msg}')
             return
 
+        logger.info(f'channel {ctx.channel.name} received BAD guess: {guess}')
         await ctx.send(f'{random.choice(self._negatives)} {ctx.author.name}, '
-                       f'{guess} is not in the secret word. {show_msg}')
+                       f'{repeated_guess_msg} "{guess}" is not in the secret word. {show_msg}')
 
-    commands.command()
+    @commands.command()
     async def help(self, ctx: commands.Context):
         """Print the wordgame help text in the given twitch channel."""
+        logger.info('printing help message')
         await ctx.send(
             "This is a Wordgame Chatbot! Use '?guess GUESS' or '?g GUESS' to make a guess. "
             "Use '?show' to show the secret word with the latest guesses revealed. "
@@ -179,7 +233,7 @@ def require_lock(func):
         try:
             game = args[0]
         except IndexError:
-            logging.error('require_lock decorator only works on methods of the Wordgame class.')
+            logger.error('require_lock decorator only works on methods of the Wordgame class.')
 
         if not game.lock.locked():
             raise MissingLockError()
@@ -192,14 +246,13 @@ def require_lock(func):
 class Wordgame:
     """A word guessing game."""
 
-    # TODO: implement hard mode
-
     data_yaml = resources.files(__package__) / 'wordgame_wordlist.yml'
     _data: dict = {}
     _categories: list = []
 
-    def __init__(self):
+    def __init__(self, hard=False):
         """Prepare a new wordgame."""
+        self.hard = hard
         self.secret_word = None
         self.secret_word_category = None
         self.normalized_word = None
@@ -225,7 +278,7 @@ class Wordgame:
     @classmethod
     def word_categories(cls):
         """Return a list of categories the wordgame can choose a secret word from."""
-        cls.load_word_data()
+        cls.load_word_data()  # cannot guarantee an instance has been made yet
 
         if cls._categories:
             return cls._categories
@@ -286,6 +339,10 @@ class Wordgame:
         for char in self.secret_word.lower():
             if char == ' ':
                 normalized_word += char
+
+                if self.hard:
+                    continue
+
                 censored_wip += '-'
                 continue
 
@@ -296,11 +353,11 @@ class Wordgame:
         if not self.normalized_word or normalized_word != self.normalized_word:
             self.normalized_word = normalized_word
 
-        logging.debug(f'secret {self.secret_word} | normal {self.normalized_word} | wip {censored_wip}')
+        logger.debug(f'secret {self.secret_word} | normal {self.normalized_word} | wip {censored_wip}')
 
         # process guesses
         for guess in self.guesses:
-            logging.debug(f'processing guess {guess}')
+            logger.debug(f'processing guess {guess}')
             for match in re.finditer(guess, self.normalized_word):
                 for index in range(*match.span()):
                     if censored_wip[index] == '_':
@@ -309,7 +366,7 @@ class Wordgame:
                                         + censored_wip[index+1:])
 
         self.censored_word = ' '.join(censored_wip)
-        logging.debug(f'final censored word: {self.censored_word}')
+        logger.debug(f'final censored word: {self.censored_word}')
 
     @require_lock
     def guess(self, guess):
