@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
 import logging
 import random
 import re
@@ -22,7 +21,6 @@ import string
 import threading
 
 from importlib import resources
-from functools import cache
 from functools import wraps
 
 import yaml
@@ -35,7 +33,7 @@ logger = logging.getLogger(__name__)
 LOGGING_LEVEL = logging.DEBUG  # change logging level here to enable/disable debug mode
 logger.setLevel(LOGGING_LEVEL)
 
-DEBUG = True if LOGGING_LEVEL <= logging.DEBUG else False
+DEBUG = LOGGING_LEVEL <= logging.DEBUG
 
 
 class MissingLockError(RuntimeError):
@@ -196,9 +194,9 @@ class Wordgame:
 
     # TODO: implement hard mode
 
-    data_yaml = (resources.files(__package__) / 'wordgame_wordlist.yml')
-    _data = None
-    _categories = None
+    data_yaml = resources.files(__package__) / 'wordgame_wordlist.yml'
+    _data: dict = {}
+    _categories: list = []
 
     def __init__(self):
         """Prepare a new wordgame."""
@@ -232,9 +230,9 @@ class Wordgame:
         if cls._categories:
             return cls._categories
 
-        filter = '' if DEBUG else 'test'
+        filter_stub = '' if DEBUG else 'test'
 
-        cls._categories = [str(key) for key in cls._data.keys() if key != filter]
+        cls._categories = [str(key) for key in cls._data if key != filter_stub]
         return cls._categories
 
     @classmethod
@@ -245,6 +243,7 @@ class Wordgame:
 
     @property
     def description(self):
+        """Return the description of the category of words the secret is from."""
         return self._data[self.secret_word_category]['description']
 
     @require_lock

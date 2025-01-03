@@ -14,9 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ignore some typical style issues pylint finds with common pytest structure
+# pylint: disable=protected-access, unused-argument, redefined-outer-name
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+
 import pytest
 
-import chatbot.wordgame as wordgame
+from chatbot import wordgame
 
 
 wordgame.DEBUG = True
@@ -24,12 +28,14 @@ wordgame.DEBUG = True
 
 @pytest.fixture
 def cleanup():
+    """Reset any class level state after each test."""
     yield
     wordgame.DEBUG = True
     wordgame.Wordgame.clear_caches()
 
 
 def test_load_data(cleanup):
+    """Test the yaml data loading mechanism and caching."""
     wordgame.Wordgame._data = None
     assert wordgame.Wordgame._data is None
     wordgame.Wordgame.load_word_data()
@@ -44,8 +50,9 @@ def test_load_data(cleanup):
 
 @pytest.mark.parametrize('debug', [(False), (True)])
 def test_categories(debug, cleanup):
+    """Verify the list of word categories works as expected."""
     wordgame.Wordgame.load_word_data()
-    assert "test" in wordgame.Wordgame._data.keys()
+    assert "test" in wordgame.Wordgame._data
 
     wordgame.DEBUG = debug
     categories = wordgame.Wordgame.word_categories()
@@ -59,6 +66,7 @@ def test_categories(debug, cleanup):
 
 @pytest.mark.parametrize('category', [(None), ('test')])
 def test_choose_word(category, cleanup):
+    """Test the choose word method sets state as expected."""
     instance = wordgame.Wordgame()
     assert instance.secret_word is None and instance.secret_word_category is None
 
@@ -76,6 +84,7 @@ def test_choose_word(category, cleanup):
                 and instance.secret_word_category)
 
 def test_clear_caches(cleanup):
+    """Ensure clearing caches actually removes cached state."""
     wordgame.Wordgame.word_categories()
     assert wordgame.Wordgame._data is not None and wordgame.Wordgame._categories is not None
 
@@ -91,6 +100,7 @@ def test_clear_caches(cleanup):
                           ('Pun*ct#ua(tioN', {}, '_ _ _ _ _ _ _ _ _ _ _'),
                           ])
 def test_build_censored_word(secret_word, guesses, expected_censored, cleanup):
+    """Verify the algorithm for creating the censored word."""
     instance = wordgame.Wordgame()
 
     instance.secret_word = secret_word
@@ -109,6 +119,7 @@ def test_build_censored_word(secret_word, guesses, expected_censored, cleanup):
                           ('foo bar', [' '], '_ _ _ - _ _ _', True, True),
                           ])
 def test_guess(secret_word, guesses, expected_censored, is_new, is_good, cleanup):
+    """Verify that guesses are handled and applied as expected."""
     instance = wordgame.Wordgame()
 
     instance.secret_word = secret_word
@@ -123,6 +134,7 @@ def test_guess(secret_word, guesses, expected_censored, is_new, is_good, cleanup
 
 
 def test_endgame(cleanup):
+    """Test the end game trigger."""
     instance = wordgame.Wordgame()
     instance.secret_word = 'secret word'
 
