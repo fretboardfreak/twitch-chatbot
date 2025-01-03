@@ -224,6 +224,12 @@ class WordgameUI(commands.Cog):
             "fully revealed the game will be over. The person to guess the last few blanks is "
             "declared the winner.")
 
+    @commands.command(aliases=['cat'])
+    async def categories(self, ctx: commands.Context):
+        """Share the available word categories with chat."""
+        logger.info(f'sharing word categories with chat: {', '.join(Wordgame.word_categories())}')
+        await ctx.send(self._show_categories())
+
 
 def require_lock(func):
     """Wrapper for wordgame methods to require the game lock to be held."""
