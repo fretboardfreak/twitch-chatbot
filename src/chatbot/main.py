@@ -19,7 +19,7 @@ import logging
 
 from . import core
 from . import token
-from .wordgame import Wordgame
+from . import wordgame
 from .pokemon import Pokedex
 
 from .version import __version__
@@ -35,7 +35,9 @@ def main():
     bot = core.Bot(token=access_token, channels=args.channels, moderators=args.mods)
 
     if args.wordgame:
-        bot.add_cog(Wordgame(bot, description=args.summary, wordlist_yaml_file=args.wordlist))
+        if args.wordlist:
+            wordgame.Wordgame.data_yaml = args.wordlist
+        bot.add_cog(wordgame.WordgameUI(bot))
 
     if args.pokemon:
         bot.add_cog(Pokedex())
@@ -61,8 +63,6 @@ def parse_cli():
     # wordgame options
     parser.add_argument('-w', '--wordgame', help="Activate the wordgame chatbot commands.",
                         action='store_true', default=False)
-    parser.add_argument('-s', '--summary', dest='summary', default=None,
-                        help="A short description of the wordgame to activate. i.e. describe the wordlist.")
     parser.add_argument('-l', '--wordlist', type=argparse.FileType('r'), default=None,
                         help='A yaml file containing a named collection of word lists.')
 

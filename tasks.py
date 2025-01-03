@@ -39,6 +39,7 @@ class Config:
     pip = bin / 'pip'
     pylint = bin / 'pylint'
     pip_compile = bin / 'pip-compile'
+    pytest = bin / 'pytest'
 
     # relative paths only, strings are input to pathlib.Path.glob
     clean_paths = [*[topfile for topfile in ['venv', 'build', 'dist']], '**/*egg-info']
@@ -123,3 +124,8 @@ def update_requirements(ctx):
         print(f'.. generating {req_file}')
         cmd = f"{pip_compile_cmd} {f'--extra {extra}' if extra else ''} --output-file {req_file} {Config.pyproject}"
         ctx.run(cmd, hide=True)
+
+
+@task(install_dev)
+def test(ctx):
+    ctx.run(str(Config.pytest))
